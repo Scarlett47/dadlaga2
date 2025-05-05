@@ -16,18 +16,32 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
-class OrderCreateView(APIView):
-    def get(self, request):
-        orders = Order.objects.all().order_by('-created_at') # Шинэ захиалгуудыг хамгийн түрүүнд
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def orders_list_view(request):
+    user = request.user
+    orders = Order.objects.filter(user=user).order_by('-created_at')  # ✨ зөвхөн тухайн хэрэглэгчийн захиалга
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
 
-    def post(self, request):
-        serializer = OrderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_order_view(request):
+    user = request.user
+    data = request.data
+    items_data = data.pop('items', [])
+
+    order = Order.objects.create(user=user, **data)
+
+    for item in items_data:
+        OrderItem.objects.create(
+            order=order,
+            product_name=item['product_name'],
+            product_price=item['product_price'],
+            quantity=item['quantity'],
+        )
+
+    return Response({'message': 'Order created successfully.'})
     
 class RegisterView(APIView):
     def post(self, request):

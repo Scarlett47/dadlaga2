@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -11,6 +13,7 @@ class Product(models.Model):
         return self.name
 
 class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)  # ✅ түр зуур null зөвшөөрөх
     customer_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=20)
     delivery_address = models.TextField()
